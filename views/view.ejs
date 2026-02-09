@@ -37,8 +37,8 @@
                     <p class="text-sm font-bold text-slate-900"><%= bot.server_host %></p>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <p class="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Status</p>
-                    <p id="dL" class="text-sm font-bold text-slate-900">Ready</p>
+                    <p class="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Proxy</p>
+                    <p class="text-sm font-bold text-slate-900"><%= bot.proxy || 'None' %></p>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <p class="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Auth</p>
@@ -64,7 +64,7 @@
             sBtn.disabled = true; sBtn.innerText = "Connecting...";
             const res = await fetch(`/start-bot/${bId}`, { method: 'POST' });
             const data = await res.json();
-            if(!data.success) { alert("Failed to connect"); resetBtn(); }
+            if(!data.success) { alert("Server failed to initiate bot."); resetBtn(); }
         }
 
         async function stopBot() {
@@ -109,6 +109,7 @@
                 me.innerHTML = `<span class="text-slate-600 font-bold mr-2">></span> <span class="text-white">${e.target.value}</span>`;
                 con.appendChild(me);
                 e.target.value = '';
+                con.scrollTop = con.scrollHeight;
             }
         });
 
