@@ -1,18 +1,40 @@
 const mineflayer = require('mineflayer');
+const express = require('express');
+
+const app = express();
+const HTTP_PORT = 8080;
+let bot; // Hoisted to allow the health check to access bot state
 
 const botArgs = {
     host: 'donutsmp.net', 
     port: 25565,
-    auth: 'microsoft',      // Required for Microsoft accounts
-    username: 'play074@outlook.com', // Your Microsoft account email
-    version: false,         // Auto-detects version
-    // profilesFolder: './cache' // Optional: saves login data here
+    auth: 'microsoft',
+    username: 'play074@outlook.com',
+    version: false,
 };
 
-function createBot() {
-    const bot = mineflayer.createBot(botArgs);
+// --- Health Check Server ---
+app.get('/health', (req, res) => {
+    // Returns 200 OK if the script is alive
+    // Includes metadata about the Minecraft bot connection
+    res.status(200).json({
+        status: 'online',
+        uptime: Math.floor(process.uptime()) + 's',
+        minecraft: {
+            connected: !!(bot && bot.entity),
+            username: bot ? bot.username : 'not_logged_in'
+        }
+    });
+});
 
-    // This event triggers during the login process
+app.listen(HTTP_PORT, () => {
+    console.log(`[System] Health check server active on port ${HTTP_PORT}`);
+});
+
+// --- Bot Logic ---
+function createBot() {
+    bot = mineflayer.createBot(botArgs);
+
     bot.on('login', () => {
         console.log(`[Success] Logged in as ${bot.username}`);
     });
@@ -20,25 +42,17 @@ function createBot() {
     bot.once('spawn', () => {
         console.log('✅ Bot spawned. Starting Anti-AFK routines.');
         
-        // Anti-AFK: Moves the bot slightly and jumps
         setInterval(() => {
             const yaw = Math.random() * Math.PI * 2;
-            bot.look(yaw, 0); // Look in a random horizontal direction
+            bot.look(yaw, 0); 
             
             bot.setControlState('jump', true);
             setTimeout(() => bot.setControlState('jump', false), 500);
-        }, 20000); // Trigger every 20 seconds
+        }, 20000);
     });
 
-    // Handle being kicked or disconnected
     bot.on('kicked', (reason) => console.log(`[Kicked] ${reason}`));
-    bot.on('error', (err) => {
-        if (err.code === 'ECONNREFUSED') {
-            console.log(`[Error] Failed to connect to ${err.address}`);
-        } else {
-            console.log(`[Error] ${err.message}`);
-        }
-    });
+    bot.on('error', (err) => console.log(`[Error] ${err.message}`));
 
     bot.on('end', () => {
         console.log('❌ Disconnected. Attempting to reconnect in 15 seconds...');
